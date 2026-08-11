@@ -1,0 +1,1165 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ============================================================================
+   Design tokens — the single source of truth (docs/design_system.md).
+   Defined in Tailwind v4's @theme so each token both (a) emits a CSS custom
+   property on :root and (b) generates the matching utility (bg-, text-, rounded-,
+   font-, text-<size>). Nothing is hardcoded per component.
+   ============================================================================ */
+@theme {
+  /* ==========================================================================
+     PALETTE — demo_design_system.md §1.
+
+     The relationship §1 asks for, and the whole of it: ONE dark ink, ONE warm
+     accent, a cream ground, charcoal text, and a warm-neutral scale between
+     them. Ink navy over forest green because §1 warns off the default-template
+     blue and this is the near-black end of that family — it reads institutional
+     without ever reading Bootstrap.
+
+     THE ACCENT IS RATIONED. --color-accent is a CTA and small-highlight colour
+     only: buttons, the focus ring, a rule above a heading, one word in a
+     headline. It is never a section background, and there is no `Band` tone
+     that fills with it — that is the discipline §1 carries over from the real
+     build's --green-signature, and the single easiest thing to get wrong.
+     ========================================================================== */
+
+  /* ---- Ink: the primary family. Nav, footer, dark bands, headings. ---- */
+  --color-ink-950: #0b0f1e; /* deepest — hero ground, the darkest field */
+  --color-ink-900: #12172b; /* anchor — dark sections, footer */
+  --color-ink-700: #232a45; /* raised dark surface, mid-dark bands */
+  --color-ink-500: #3a4363; /* dark-on-light structural text, icon strokes */
+
+  /* ---- Accent: exactly one warm colour (§1).
+          Named `signature`, not `accent`, for two reasons: it is the same
+          rationing discipline the real build gave --green-signature (§8), and
+          `accent` is already spoken for by shadcn's semantic layer at the foot
+          of this file, where it means "muted hover background". Two different
+          things must not share one utility name. ---- */
+  --color-signature: #c77d3a;      /* the CTA fill. Small elements only. */
+  --color-signature-deep: #a6642b; /* hover/pressed */
+  /* Accent-coloured TEXT on cream. #c77d3a is 3.1:1 on --color-cream and fails
+     AA for body text, so accent text uses this deeper cut (5.4:1) instead. Not
+     interchangeable with --color-signature — one is for fills, one is for
+     glyphs. */
+  --color-signature-ink: #8a5217;
+  --color-signature-wash: #f6ead9; /* barely-there tint for a chip or a rule */
+
+  /* ---- Warm neutrals: cream ground → sand → line (§1). ---- */
+  --color-cream: #faf6ef;      /* the page. Never #ffffff. */
+  --color-surface: #fffcf6;    /* cards — lifted off the cream, still warm */
+  --color-sand: #f2ece1;       /* quiet band background */
+  --color-sand-deep: #e8e1d4;  /* dividers, subtle fills, text on dark ink */
+  --color-line: #e5ddce;       /* default hairline border */
+
+  /* ---- Text: charcoal, not black (§1). ---- */
+  --color-ink: #1f1d1a;        /* body copy */
+  --color-ink-muted: #6b655c;  /* secondary text, captions */
+  --color-ink-faint: #948c80;  /* hints, placeholders, metadata */
+
+  /* ==========================================================================
+     LEGACY ALIASES — every page except the homepage still calls these names.
+
+     Pass 1 re-points the VALUES at the new palette instead of renaming the
+     tokens, so ~40 untouched pages inherit the new system on their next render
+     rather than breaking. The names now lie about their colour (`green-forest`
+     is navy); renaming them across the codebase is pass 2's job, and this block
+     is what gets deleted then.
+
+     Each mapping preserves the token's ROLE, which is why the pages still hold
+     together: deepest→deepest, anchor-dark→anchor-dark, rationed-CTA→accent,
+     pale-tint→pale-tint. Two are worth knowing about:
+       * --color-green-brand lands on --color-ink-700, NOT on the accent. It is
+         used as a full Band background (the news band), and an accent-filled
+         band is exactly the large fill §1 forbids.
+       * --color-green-signature lands on the accent, because that token already
+         had precisely the accent's rationed-CTA role.
+     ========================================================================== */
+  --color-green-ink: var(--color-ink-950);
+  --color-green-forest: var(--color-ink-900);
+  --color-green-brand: var(--color-ink-700);
+  --color-green-signature: var(--color-signature);
+  --color-green-pale: var(--color-sand-deep);
+  --color-green-mist: var(--color-sand);
+  --color-paper: var(--color-cream);
+
+  /* ---- Semantic (forms & status). Status colour is not brand colour, so
+          these keep their conventional hues. ---- */
+  --color-success: #1f7a4d;
+  --color-danger: #c0392b;
+  --color-danger-bg: #fbeae8;
+  --color-warning: #b8860b;
+
+  /* ---- Radii — ONE corner language (§3: pick one and hold it).
+          Tight and soft rather than pill-round: an annual report, not an app.
+          The sm/md/lg/xl steps are derived from --radius in the shadcn layer at
+          the foot of this file, so the primitives and the hand-written
+          components round identically. --radius resolves to 10px, giving
+          6 / 8 / 10 / 14px. ---- */
+  --radius-full: 999px; /* pills, avatars, eyebrow chips — the one exception */
+
+  /* ---- Fonts (§2) — wired to next/font variables in app/layout.tsx.
+          Each stack pairs its Latin face with its Devanagari counterpart in the
+          same style, so Nepali-script proper nouns never fall back to tofu or
+          to a mismatched weight. ---- */
+  --font-display: var(--font-fraunces), var(--font-noto-serif-deva), Georgia, 'Times New Roman', serif;
+  --font-body: var(--font-inter), var(--font-noto-sans-deva), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+
+  /* ---- Type scale (Section 3). Sizes pair with line-height/weight so the
+          `text-hero` / `text-h1` … utilities carry the full treatment. ---- */
+  /* The serif carries the hierarchy, so the display steps run a little larger
+     and a little tighter than they did under a sans: §2 says don't be shy with
+     the homepage H1, and Fraunces's optical-size axis keeps a 5rem headline
+     from looking like a small one blown up. Negative tracking only at display
+     sizes — a serif set tight at body size gets harder to read, not smarter. */
+  --text-hero: clamp(2.75rem, 6.5vw, 5rem);
+  --text-hero--line-height: 1.05;
+  --text-hero--font-weight: 600;
+  --text-hero--letter-spacing: -0.02em;
+  --text-h1: clamp(2.125rem, 4vw, 3.25rem);
+  --text-h1--line-height: 1.1;
+  --text-h1--font-weight: 600;
+  --text-h1--letter-spacing: -0.015em;
+  --text-h2: clamp(1.625rem, 3vw, 2.5rem);
+  --text-h2--line-height: 1.15;
+  --text-h2--font-weight: 600;
+  --text-h2--letter-spacing: -0.01em;
+  --text-h3: 1.375rem;
+  --text-h3--line-height: 1.3;
+  --text-h3--font-weight: 500;
+  --text-lead: 1.25rem;
+  --text-lead--line-height: 1.6;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.65;
+  --text-small: 0.9375rem;
+  --text-small--line-height: 1.5;
+  --text-eyebrow: 0.8125rem;
+  --text-eyebrow--line-height: 1.2;
+  --text-eyebrow--font-weight: 500;
+  --text-eyebrow--letter-spacing: 0.08em;
+
+  /* ---- Motion (Section 6) ---- */
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ============================================================================
+   Doc-named aliases + raw tokens for use in hand-written CSS and inline styles.
+   These point back at the @theme values above (still one source of truth) and
+   let component CSS read `var(--paper)`, `var(--space-6)`, etc. exactly as the
+   design doc names them.
+   ============================================================================ */
+:root {
+  /* The new vocabulary — what pass-1 code should be written against. */
+  --ink-950: var(--color-ink-950);
+  --ink-900: var(--color-ink-900);
+  --ink-700: var(--color-ink-700);
+  --ink-500: var(--color-ink-500);
+
+  --signature: var(--color-signature);
+  --signature-deep: var(--color-signature-deep);
+  --signature-ink: var(--color-signature-ink);
+  --signature-wash: var(--color-signature-wash);
+
+  --cream: var(--color-cream);
+  --sand: var(--color-sand);
+  --sand-deep: var(--color-sand-deep);
+
+  /* Legacy raw-CSS aliases, same deal as the @theme block above: values
+     re-pointed, names kept, deleted in pass 2. */
+  --green-ink: var(--color-green-ink);
+  --green-forest: var(--color-green-forest);
+  --green-brand: var(--color-green-brand);
+  --green-signature: var(--color-green-signature);
+  --green-pale: var(--color-green-pale);
+  --green-mist: var(--color-green-mist);
+
+  --paper: var(--color-paper);
+  --surface: var(--color-surface);
+  --ink: var(--color-ink);
+  --ink-muted: var(--color-ink-muted);
+  --ink-faint: var(--color-ink-faint);
+  --line: var(--color-line);
+
+  --success: var(--color-success);
+  --danger: var(--color-danger);
+  --danger-bg: var(--color-danger-bg);
+  --warning: var(--color-warning);
+
+  /* Spacing scale (Section 5) — 8px-based. Tailwind's numeric p-/gap- utilities
+     already resolve to these same values; these vars cover raw-CSS use. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-24: 96px;
+
+  /* Motion durations (Section 6): 200–260ms. */
+  --dur-fast: 200ms;
+  --dur: 260ms;
+
+  /* Navigation (design_system.md Section 8 → "Navigation sizing & scrim").
+     Bar height, the over-hero legibility scrim, and the shared nav link size. */
+  --nav-height: 80px;                 /* taller bar so larger links + logo breathe */
+  --nav-logo-height: 38px;            /* visible logo height in the bar */
+  --nav-link-size: 1.0625rem;         /* 17px links, medium weight */
+  --nav-scrim-height: 100px;          /* top-down scrim behind the over-hero nav */
+  --nav-scrim: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.30) 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  /* ---- shadcn's semantic layer, re-pointed at the palette above ------------
+     `init` wrote a neutral greyscale base here; this is the override step. Any
+     shadcn primitive added from here on (dialog, dropdown, tabs, form controls
+     — §6) lands on the cream/ink/accent system by construction rather than
+     needing to be restyled after the fact.
+
+     --primary is the SIGNATURE accent, and --primary-foreground is ink, not
+     white: white on #c77d3a is 3.4:1 and fails AA, while ink on it is 5.2:1. A
+     warm button with dark type is also simply the more editorial object.
+
+     shadcn's --accent is NOT the brand accent — in its vocabulary that token is
+     the muted hover background for menu items and list rows, so it points at
+     sand. The brand accent is --color-signature (see the palette above).
+     -------------------------------------------------------------------------- */
+  --background: var(--color-cream);
+  --foreground: var(--color-ink);
+  --card: var(--color-surface);
+  --card-foreground: var(--color-ink);
+  --popover: var(--color-surface);
+  --popover-foreground: var(--color-ink);
+  --primary: var(--color-signature);
+  --primary-foreground: var(--color-ink-950);
+  --secondary: var(--color-sand);
+  --secondary-foreground: var(--color-ink-900);
+  --muted: var(--color-sand);
+  --muted-foreground: var(--color-ink-muted);
+  --accent: var(--color-sand);
+  --accent-foreground: var(--color-ink-900);
+  --destructive: var(--color-danger);
+  --border: var(--color-line);
+  --input: var(--color-line);
+  --ring: var(--color-signature);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  /* THE corner-radius language (§3), for the primitives and the hand-written
+     components alike. 10px, stepped down by the calc chain in the @theme inline
+     block at the foot of this file: sm 6px (buttons, inputs, badges), md 8px
+     (cards, image containers), lg 10px, xl 14px (large panels). Tight and soft
+     — nothing here is a pill except --radius-full, which is reserved for things
+     that genuinely are (avatars, eyebrow chips). Change this one value to
+     re-tune the whole system. */
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+/* ============================================================================
+   Base styles
+   ============================================================================ */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    /* --cream and --background are the same value; both are stated because the
+       site's own components read --cream and the shadcn primitives read
+       --background, and neither should have to know about the other. */
+    background-color: var(--cream);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: var(--text-body);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Every heading is the display serif (§2). Weight 600 rather than 700:
+     Fraunces is a high-contrast face and its bold is heavy enough to shout,
+     which is the opposite of the register this site wants. */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    line-height: 1.1;
+    font-weight: 600;
+    text-wrap: balance;
+  }
+
+  /* Visible keyboard focus everywhere (Accessibility floor, Section 11). */
+  :focus-visible {
+    outline: 2px solid var(--green-signature);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Form controls — the doc's form spec, centralized (Section 8). The site is
+     LIGHT-ONLY (Section 12: no dark mode), so controls resolve to tokens with
+     no `dark:` variant anywhere. Plain element selectors are used (NOT :where)
+     because Tailwind's Preflight resets `input { background-color: transparent }`
+     at specificity (0,0,1); a :where() rule is specificity 0 and would lose to
+     it. These sit in the `base` layer AFTER Preflight, so at equal-or-higher
+     specificity they win — while any component utility (utilities layer) still
+     overrides them. */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]),
+  textarea,
+  select {
+    background-color: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--ink-faint);
+    opacity: 1;
+  }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="color"]):focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: none;
+    border-color: var(--green-signature);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--green-signature) 30%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
+}
+
+/* ============================================================================
+   Component classes — buttons & badges (Section 8). Reusable so a "primary"
+   is always the filled signature green and never accidentally a ghost.
+   ============================================================================ */
+@layer components {
+  /* ==========================================================================
+     TWO button styles, and only two (§6: "resist adding a third").
+
+     These CSS classes and components/ui/button.tsx are the SAME two objects
+     expressed twice, deliberately and temporarily: the Button component (cva,
+     shadcn) is what pass-1 code uses, while ~40 pages this pass does not touch
+     still say `className="btn-primary"`. Both read the same tokens, so they
+     cannot drift in colour, radius, or padding. Pass 2 deletes these classes as
+     it converts those pages.
+
+     Primary is the signature accent with INK type, not white: white on #c77d3a
+     is 3.4:1 and fails AA at this size; ink is 5.2:1.
+     ========================================================================== */
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: var(--signature);
+    color: var(--ink-950);
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    padding: 14px 24px;
+    font-weight: 500;
+    line-height: 1;
+    transition:
+      background-color var(--dur-fast) var(--ease-soft),
+      transform var(--dur-fast) var(--ease-soft);
+  }
+  .btn-primary:hover { background-color: var(--signature-deep); }
+  .btn-primary:active { transform: translateY(1px); }
+  .btn-primary:disabled { opacity: 0.6; pointer-events: none; }
+
+  /* Secondary — an outline, for everything that is not the one most important
+     action in its section. */
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background-color: transparent;
+    color: var(--ink-900);
+    border: 1px solid color-mix(in oklab, var(--ink-900) 30%, transparent);
+    border-radius: var(--radius-sm);
+    padding: 14px 24px;
+    font-weight: 500;
+    line-height: 1;
+    transition:
+      background-color var(--dur-fast) var(--ease-soft),
+      border-color var(--dur-fast) var(--ease-soft);
+  }
+  .btn-secondary:hover {
+    background-color: color-mix(in oklab, var(--ink-900) 6%, transparent);
+    border-color: color-mix(in oklab, var(--ink-900) 55%, transparent);
+  }
+
+  /* The dark-band context. Placed on any ink-filled section (Band adds it to
+     every dark tone), it re-points the SECONDARY button's two colours at the
+     cream side of the palette — the same one style, reading correctly on a dark
+     ground. A context, not a third variant: primary is untouched, because an
+     accent fill works on both grounds.
+     Only the CSS-class button is handled here. The Button component carries its
+     own `[.on-ink_&]:` utilities, because a rule in this layer cannot override
+     one in the utilities layer. */
+  .on-ink .btn-secondary {
+    color: var(--cream);
+    border-color: color-mix(in oklab, var(--cream) 40%, transparent);
+  }
+  .on-ink .btn-secondary:hover {
+    background-color: color-mix(in oklab, var(--cream) 12%, transparent);
+    border-color: color-mix(in oklab, var(--cream) 70%, transparent);
+  }
+
+  /* Status pills. */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--radius-full);
+    padding: 2px 10px;
+    font-size: var(--text-eyebrow);
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+  .badge-neutral { background-color: var(--green-mist); color: var(--green-ink); }
+  .badge-warning {
+    background-color: color-mix(in oklab, var(--warning) 16%, var(--surface));
+    color: color-mix(in oklab, var(--warning) 72%, black);
+  }
+}
+
+/* ============================================================================
+   Layout utilities — the width & full-bleed rules (Section 5 / Section 12).
+   `container-page` holds content to a comfortable measure; full-bleed bands
+   omit it and span 100% while placing a `container-page` inside.
+   ============================================================================ */
+@utility container-page {
+  width: 100%;
+  max-width: min(1440px, 100%);
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 5vw, 4rem);
+}
+
+/* Generous vertical rhythm for marketing sections. */
+@utility section-y {
+  padding-block: clamp(64px, 10vw, 96px);
+}
+
+/* Auto-fit card grid: reflows 4-up → 2-up → 1-up on its own, no per-breakpoint
+   rules (Section 5). */
+@utility grid-auto-fit {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-6);
+}
+
+/* ---- Shared card grids (components/card-grid.tsx) --------------------------
+   EXPLICIT column counts, not auto-fit: auto-fit's count depends on the
+   container width and silently changed with it (a 420px min produced three
+   columns on a ~1312px content box, not two). Stating the count per breakpoint
+   is predictable at every width. Both start single-column; no padding on the
+   grid itself — padding on a subgrid parent shifts the tracks the cards align
+   to. gap uses the space-6 token. */
+
+/* Text-heavy cards (quotes): one column, two from 880px up — a wide measure so
+   a quote never reads as a narrow ribbon. Never three. */
+@utility card-grid-text {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+
+  @media (min-width: 880px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Media cards (image + title + body): one column, two from 640px, three from
+   1024px up. Three (not four) keeps ~430px cards on a 1312px content box —
+   room for a title and a few lines of body. */
+@utility card-grid-media {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  @media (min-width: 1024px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Cap running text to a readable ~75-character measure (Section 5). */
+@utility measure {
+  max-width: 68ch;
+}
+
+/* ============================================================================
+   Shared content card (components/content-card.tsx). The card is itself a grid
+   that spans FIVE parent rows and adopts them as SUBGRID, so every card in a row
+   shares its five track heights — media, meta, title, body, and footer line up
+   across the row with no fixed heights and no JS (a short quote gets a
+   full-height card with its attribution level with a taller neighbour's).
+   Subgrid reached Baseline Widely Available in 2026-03; the @supports baseline
+   (body row = 1fr so the footer still sinks to the bottom) keeps older browsers
+   reasonable, just not perfectly aligned. Card §8: --surface, --radius-md, 1px
+   --line, hover lift toward --green-pale, motion-reduce safe.
+   ============================================================================ */
+.content-card {
+  grid-row: span 5;
+  display: grid;
+  grid-template-rows: auto auto auto 1fr auto; /* baseline; body grows */
+  gap: 0; /* slots own their padding — no inherited row/col gaps inside */
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  overflow: hidden; /* clip a flush media image to the top radius */
+  color: inherit;
+  text-decoration: none;
+  transition:
+    transform var(--dur-fast) var(--ease-soft),
+    border-color var(--dur-fast) var(--ease-soft);
+}
+@supports (grid-template-rows: subgrid) {
+  .content-card {
+    grid-template-rows: subgrid;
+  }
+}
+/* The whole elevation vocabulary: 2px of lift and a border that warms toward
+   the accent. No shadow (§3). Matches components/ui/card.tsx exactly. */
+.content-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in oklab, var(--signature) 45%, transparent);
+}
+@media (prefers-reduced-motion: reduce) {
+  .content-card {
+    transition: none;
+  }
+  .content-card:hover {
+    transform: none;
+  }
+}
+
+/* Media slot. An image fills the top flush (no padding); overflow:hidden on the
+   card clips it to the radius. Empty/omitted media renders a zero-height
+   placeholder (kept as a child so every card has the same 5 children — required
+   for subgrid). */
+.content-card__media {
+  aspect-ratio: 4 / 3;
+  width: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* No-image variant (§9 "green as frame, not filter"): a --green-forest cover
+   panel carrying the title in --paper, instead of an empty frame or a logo. */
+.content-card__cover {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: flex-end;
+  padding: var(--space-6);
+  background-color: var(--green-forest);
+  color: var(--paper);
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+}
+/* This panel replaces the title slot, so it carries the card's <h2> (heading
+   outline, §11). The panel owns the typography, so the heading inherits it
+   instead of taking the global h1–h6 treatment — visually unchanged from the
+   <span> it replaced. */
+.content-card__cover h2 {
+  font-weight: inherit;
+  line-height: inherit;
+  text-wrap: inherit;
+}
+
+/* Content slots share a uniform 24px rhythm: each populated slot carries a
+   top+inline padding of space-6 and no bottom padding, so consecutive slots sit
+   24px apart (never doubled) and the first visible slot is 24px from the media
+   or the card top. Empty slots render with no padding and collapse to zero. The
+   footer adds the bottom padding. */
+.content-card__slot {
+  padding: var(--space-6) var(--space-6) 0;
+}
+.content-card__footer {
+  padding: var(--space-6);
+}
+
+/* ============================================================================
+   Gallery lightbox (components/gallery/photo-lightbox.tsx). A NATIVE <dialog>
+   opened with showModal(), so the browser provides the focus trap, the top
+   layer, and Escape-to-close. These rules only undo the UA's default dialog box
+   (which is a small centred white panel) and turn it into a full-screen viewer.
+   ============================================================================ */
+.lightbox {
+  width: 100vw;
+  max-width: 100vw;
+  height: 100dvh;
+  max-height: 100dvh;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background-color: var(--green-ink);
+  color: var(--paper);
+  overflow: hidden;
+}
+.lightbox::backdrop {
+  background-color: rgb(0 0 0 / 0.8);
+}
+/* The open/close fade is scoped to `no-preference`, the same as .reveal above:
+   with reduced motion the viewer simply appears, with no animation to suppress. */
+@media (prefers-reduced-motion: no-preference) {
+  .lightbox[open],
+  .lightbox[open]::backdrop {
+    animation: lightbox-fade-in var(--dur-fast) var(--ease-soft);
+  }
+}
+@keyframes lightbox-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ============================================================================
+   Leadership scroll track (components/home/leadership-message-cards.tsx).
+
+   A horizontal scroller, NOT card-grid-media. Five leaders wrapped into a
+   3-column grid cost two full rows of homepage height, and that grows with
+   every row the school adds. Here the cards sit on ONE row and the rest are
+   reached by scroll or swipe.
+
+   It stays a GRID (grid-auto-flow: column), never a flex row. .content-card is
+   `grid-row: span 5` + `grid-template-rows: subgrid`; as a FLEX item that
+   subgrid resolves to `none`, the five slots fall into auto rows, and the cards
+   lose the slot-for-slot alignment (media, meta, title, body, footer) they
+   share everywhere else on the site — footers in particular stop lining up.
+   Column flow keeps them grid items, so only the axis changes.
+
+   Card width per breakpoint is grid-auto-columns: ~86% on mobile so the next
+   card PEEKS and the row reads as scrollable, then exactly 2 and 3 cards to the
+   content width at card-grid-media's own 640/1024 breakpoints.
+   ============================================================================ */
+.leadership-track {
+  display: grid;
+  grid-auto-flow: column;
+  /* The five tracks the cards subgrid into — the same shape as .content-card's
+     own fallback rows, declared here because column flow needs explicit rows to
+     place a `span 5` card in one column. */
+  grid-template-rows: auto auto auto 1fr auto;
+  grid-auto-columns: 86%;
+  gap: var(--space-6);
+  overflow-x: auto;
+  /* A swipe that runs off the end of the track scrolls the track, not the page
+     — and never triggers the browser's back gesture. */
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  /* Top: room for the card's 2px hover lift, which would otherwise be clipped
+     at the track's edge (`overflow-x: auto` computes overflow-y to `auto` too).
+     Bottom: a clear gap between the cards and the rail below them. Padding on a
+     subgrid parent insets every card's tracks equally, so alignment is
+     untouched. */
+  padding-top: var(--space-1);
+  padding-bottom: var(--space-4);
+  /* A VISIBLE, branded rail. The scrollbar is the honest affordance here: it
+     shows at a glance how much more there is and how far along you are, and it
+     can be dragged. Hiding it and relying on the peeking card alone left the
+     row looking static.
+     Both syntaxes are set on purpose. Firefox and current Chrome honour the
+     standard `scrollbar-width`/`scrollbar-color` pair (and Chrome ignores the
+     ::-webkit- rules once `scrollbar-color` is present); older WebKit/Blink
+     falls back to the pseudo-elements below. Same result either way: a
+     --green-pale rail with a --green-brand thumb, sitting on the --green-mist
+     band. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--green-brand) var(--green-pale);
+}
+.leadership-track::-webkit-scrollbar {
+  height: 8px;
+}
+.leadership-track::-webkit-scrollbar-track {
+  background-color: var(--green-pale);
+  border-radius: var(--radius-full);
+}
+.leadership-track::-webkit-scrollbar-thumb {
+  background-color: var(--green-brand);
+  border-radius: var(--radius-full);
+}
+.leadership-track::-webkit-scrollbar-thumb:hover {
+  background-color: var(--green-ink);
+}
+/* Every card is a snap point, so mandatory snapping always has somewhere near
+   to land — including for a card scrolled into view by keyboard focus. */
+.leadership-track > .content-card {
+  scroll-snap-align: start;
+}
+@media (min-width: 640px) {
+  .leadership-track {
+    grid-auto-columns: calc((100% - var(--space-6)) / 2);
+  }
+}
+@media (min-width: 1024px) {
+  .leadership-track {
+    grid-auto-columns: calc((100% - 2 * var(--space-6)) / 3);
+  }
+}
+/* Animated scrolling only where motion is welcome (Section 6). The snap
+   POSITIONS stay in both cases — it is the animation between them that goes, so
+   a reduced-motion visitor still gets a card-aligned rest position, just
+   instantly. */
+@media (prefers-reduced-motion: no-preference) {
+  .leadership-track {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ============================================================================
+   Leadership message dialog (components/home/leadership-message-cards.tsx).
+   The same native <dialog> + showModal() mechanics as the lightbox above —
+   browser-owned focus trap, top layer, page inertness, Escape-to-close — but a
+   READING panel rather than a full-screen viewer, so it keeps the site's card
+   treatment (--surface, a large radius, a hairline border).
+
+   Desktop: a centred panel on a comfortable measure, capped short of the
+   viewport so a long message scrolls INSIDE the panel (the flex column below
+   plus overflow-y:auto on the body region) rather than growing off-screen.
+   Mobile: a near-full-screen sheet, because a 400px-wide centred card with its
+   own scrollbar is worse than simply owning the screen.
+
+   `display: flex` is scoped to [open] deliberately. Author styles beat the UA
+   sheet regardless of specificity, so an unscoped `display` here would defeat
+   the UA's `dialog:not([open]) { display: none }` and leave the panel on the
+   page permanently.
+   ============================================================================ */
+.leadership-dialog {
+  width: min(100% - 2 * var(--space-6), 720px);
+  max-height: calc(100dvh - 2 * var(--space-8));
+  margin: auto; /* centred in the viewport by the UA's dialog positioning */
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background-color: var(--surface);
+  color: var(--ink);
+  overflow: hidden; /* clip the header/body to the radius; the body scrolls */
+}
+.leadership-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+.leadership-dialog::backdrop {
+  background-color: rgb(14 42 28 / 0.6); /* --green-ink, softened */
+}
+
+/* Near-full-screen sheet on small screens. */
+@media (max-width: 639px) {
+  .leadership-dialog {
+    width: 100vw;
+    max-width: 100vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+  }
+}
+
+/* The open fade is scoped to `no-preference`, the same as .lightbox and
+   .reveal: with reduced motion the panel simply appears, with no transition to
+   suppress. */
+@media (prefers-reduced-motion: no-preference) {
+  .leadership-dialog[open],
+  .leadership-dialog[open]::backdrop {
+    animation: lightbox-fade-in var(--dur-fast) var(--ease-soft);
+  }
+}
+
+/* ============================================================================
+   Motion baseline — scroll reveal (Section 6). The hidden start-state is scoped
+   to `no-preference`, so with reduced motion the element is simply visible from
+   the start; the JS still toggles data-visible harmlessly.
+   ============================================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity var(--dur) var(--ease-soft),
+      transform var(--dur) var(--ease-soft);
+    will-change: opacity, transform;
+  }
+  .reveal[data-visible="true"] {
+    opacity: 1;
+    transform: none;
+  }
+  /* Slight stagger for grouped children (~60ms). */
+  .reveal-stagger > * {
+    opacity: 0;
+    transform: translateY(16px);
+    transition:
+      opacity var(--dur) var(--ease-soft),
+      transform var(--dur) var(--ease-soft);
+  }
+  .reveal-stagger[data-visible="true"] > * {
+    opacity: 1;
+    transform: none;
+  }
+  .reveal-stagger[data-visible="true"] > *:nth-child(2) { transition-delay: 60ms; }
+  .reveal-stagger[data-visible="true"] > *:nth-child(3) { transition-delay: 120ms; }
+  .reveal-stagger[data-visible="true"] > *:nth-child(4) { transition-delay: 180ms; }
+  .reveal-stagger[data-visible="true"] > *:nth-child(5) { transition-delay: 240ms; }
+}
+
+/* ============================================================================
+   Homepage statistics (components/home/three-benefits.tsx). The count-up and
+   the Reveal stagger are untouched; this is the chrome around them.
+
+   ONE custom property, --stat-accent, gives each column its identity: the
+   hairline rule above the figure. Each column sets it to an ink-family token,
+   stepping sand-deep → ink-500 → ink-900 across the row, so the three read as a
+   deliberate gradation rather than three arbitrary colours. The signature
+   accent is deliberately absent: §1 rations it to CTAs and small highlight
+   moments, and spending it on decoration is exactly what would stop it reading
+   as an action colour.
+
+   NO CARD CHROME. The figures used to sit in bordered, washed, hover-lifting
+   panels; pass 1 takes all of it away. A count-up to 1,200 set at hero size in
+   the display serif does not need a box around it, and three boxes in a row is
+   the card-grid instinct §3 asks the page to break. What is left is the figure,
+   its label, and one hairline rule — which is also the only thing that needed
+   to animate.
+   ============================================================================ */
+.stat-card {
+  --stat-accent: var(--ink-500); /* fallback; each column sets its own */
+  padding-top: var(--space-6);
+}
+
+/* The accent rule is a PSEUDO-ELEMENT, not a <span>: these columns are the
+   `div` children of a <dl>, where the only permitted content is dt/dd. */
+.stat-card::before {
+  content: "";
+  /* `stretch` runs the rule the full width of its column (the column is a flex
+     COLUMN with items-start, which would otherwise shrink it to nothing);
+     `flex: none` keeps it at its own 2px height rather than sharing the
+     column's free space. */
+  flex: none;
+  align-self: stretch;
+  height: 2px;
+  background-color: var(--stat-accent);
+  /* The rule is drawn from the left edge, so scaleX(0) → scaleX(1) reads as it
+     being ruled in rather than growing from the middle. */
+  transform-origin: left center;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* The rule draws itself out as the row reveals, chasing each card's own
+     60ms-staggered entrance. Scoped to `no-preference`, like every other
+     motion in this file, so with reduced motion the rule is simply drawn from
+     the start — the ONLY thing suppressed is the movement. */
+  .stat-card::before {
+    transform: scaleX(0);
+    transition: transform var(--dur) var(--ease-soft);
+  }
+  .reveal-stagger[data-visible="true"] .stat-card::before {
+    transform: scaleX(1);
+    transition-delay: 60ms;
+  }
+  .reveal-stagger[data-visible="true"] > .stat-card:nth-child(2)::before {
+    transition-delay: 120ms;
+  }
+  .reveal-stagger[data-visible="true"] > .stat-card:nth-child(3)::before {
+    transition-delay: 180ms;
+  }
+}
+
+/* ============================================================================
+   Hero seam (components/home/hero.tsx). The hero is a solid ink message panel
+   beside the video, and the join between the two is a SHARP diagonal — a clean
+   geometric edge, no dissolve. It is built as two stacked layers rather than two
+   panels clipped against each other (two panels meeting on a shared edge risk a
+   hairline gap or a sub-pixel misalignment exactly where the eye is drawn):
+
+     1. BASE — the <section>'s own bg-green-forest. ONE solid rectangle spanning
+        the hero's full width and height, behind everything else.
+     2. MEDIA — `.hero-media`, the video/poster layer, sitting on the base and
+        deliberately OVERSHOOTING its grid cell so it reaches past the join. A
+        clip-path cuts its leading edge on a gentle diagonal; where the cut
+        removes media the base simply shows through.
+
+   Why that ordering matters, now that nothing masks the cut: the base is one
+   uninhabited rectangle UNDER the whole media layer, not a panel butted up
+   against it, so there is no shared boundary to leave a gap at. The clip can
+   land on any sub-pixel it likes and the pixel behind it is always the same
+   green. Nothing lighter exists anywhere in the stack inside the hero either —
+   the <section> paints --green-forest across its entire box, so the body's
+   near-white --paper is fully covered and can never surface as a light hairline
+   at the edge. The only colour step at the cut is the intended one: video
+   against green.
+
+   The hero's text sits in its own layer on the base (z-10 in the component) and
+   is unaffected by the clip, so it never has to track the diagonal's position.
+
+   Nothing here animates — a static shape — so there is no prefers-reduced-motion
+   branch to write for the seam itself.
+   ============================================================================ */
+
+/* MOBILE-FIRST — the stacked layout, where the seam is HORIZONTAL (panel above,
+   16:9 video band below), so the treatment is recalculated for that orientation
+   rather than being the desktop polygon turned on its side.
+
+   The layer is pulled 10% of the band's height UP into the panel's bottom
+   padding (pb-16 = 64px; the overshoot is ~22px on a 390px phone, ~43px at
+   767px, so it always stays inside that padding and never reaches the text).
+   That overshoot is what the diagonal then spends: the polygon gives back at the
+   top-left roughly what the overshoot added, so the visible video band keeps its
+   16:9 presence instead of being shaved down by the cut. */
+.hero-media {
+  position: absolute;
+  inset: 0;
+  top: -10%;
+  /* Deep green under the media so the shape is never a blank/black area while
+     the video loads. It lives on the CLIPPED layer, not on the cell behind it —
+     on the cell it would show through the cut and put --green-ink on the wrong
+     side of the seam, which is precisely the visible step this design avoids. */
+  background-color: var(--green-ink);
+  /* Top edge rises left → right: 11% of the layer's height at the left edge,
+     flush at the right. The band is a fixed 16:9 at every phone width, so this
+     is a constant ~4° — a clear diagonal, never a wedge. */
+  clip-path: polygon(0 11%, 100% 0, 100% 100%, 0 100%);
+}
+
+/* DESKTOP — the side-by-side layout, where the seam is VERTICAL. 768px is
+   Tailwind's `md`, i.e. the exact width at which the hero grid stops stacking
+   (md:grid-cols-2 in the component); the two must stay in sync. */
+@media (min-width: 768px) {
+  .hero-media {
+    top: 0;
+    /* Start left of centre: -6% of the half-width cell = 3% of the hero, so the
+       media has room to be cut back without exposing the left panel's text. */
+    left: -6%;
+    /* A restrained editorial rake (§1), not a sports-brand angle: 8% of the
+       layer's width across the FULL height works out at ~4.2% of the hero's
+       width, and the same figure holds at every desktop width because the layer
+       is sized as a percentage of the hero. */
+    clip-path: polygon(8% 0, 100% 0, 100% 100%, 0 100%);
+  }
+}
+
+/* Text shadow so white nav text stays legible over the LIGHT parts of the hero
+   video (faces, light jerseys), on top of the scrim below. */
+.nav-legible {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+/* Legibility scrim (design_system.md Section 8): a subtle top-down dark gradient
+   behind the nav, full width, ONLY in the transparent/over-hero state. Dark
+   enough that white links survive over light video, transparent enough that it
+   never reads as a solid bar. The solid/scrolled state uses --paper instead and
+   does not render this. */
+.nav-scrim {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  height: var(--nav-scrim-height);
+  background: var(--nav-scrim);
+  pointer-events: none;
+}
+
+/* Rendered Markdown (post bodies). Preflight strips list/heading styling, so it
+   is restored here within the article container. Reusable by any rich-text
+   content module. */
+.rich-text {
+  color: var(--ink);
+  line-height: 1.75;
+}
+.rich-text > * + * {
+  margin-top: 1em;
+}
+.rich-text h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-h2);
+  margin-top: 1.4em;
+}
+.rich-text h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  margin-top: 1.2em;
+}
+.rich-text a {
+  color: var(--green-brand);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+/* Bullets read as branded content rather than default browser output: a small
+   green square instead of a black disc. `list-style: square` + a scaled-down,
+   green ::marker gets there WITHOUT `list-style: none` + a ::before — which is
+   the usual recipe but silently drops the list role in Safari/VoiceOver. Here
+   the list stays a real list; a browser that ignores ::marker styling just
+   shows a default-coloured square. */
+.rich-text ul {
+  list-style: square;
+  padding-left: 1.5em;
+}
+.rich-text ul > li::marker {
+  color: var(--green-brand);
+  font-size: 0.85em;
+}
+.rich-text ol {
+  list-style: decimal;
+  padding-left: 1.5em;
+}
+.rich-text li + li {
+  margin-top: 0.25em;
+}
+.rich-text strong {
+  font-weight: 600;
+  color: var(--green-ink);
+}
+.rich-text blockquote {
+  border-left: 3px solid var(--green-pale);
+  padding-left: 1em;
+  color: var(--ink-muted);
+}
+.rich-text img {
+  border-radius: var(--radius-md);
+  max-width: 100%;
+}
+
+/* TABLES — added for Programmes, where the curriculum/subject grid is the point
+   of the page (PRD 14). remark-gfm turns a Markdown pipe table into real
+   <table> markup; Preflight strips its borders and spacing, so they are
+   restored here.
+
+   The scroll behaviour is the important part. A subject table with five or six
+   columns is simply wider than a 375px phone, and the wrong fix is to let it
+   push the whole page sideways (design_system.md §5: the body must never scroll
+   horizontally). So the table itself becomes the scroll container:
+   `display: block` + `width: max-content` lets it size to its content and
+   `max-width: 100%` caps it at the measure, leaving the overflow to scroll
+   INSIDE the table's own box. `-webkit-overflow-scrolling` keeps that momentum
+   scrolling on iOS. The tbody/tr/td keep their table display values, so the
+   columns still align as a table within that box. */
+.rich-text table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-collapse: collapse;
+  font-size: var(--text-small);
+}
+.rich-text th,
+.rich-text td {
+  border: 1px solid var(--line);
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+.rich-text th {
+  background-color: var(--green-mist);
+  color: var(--green-ink);
+  font-weight: 600;
+  /* A long header ("Optional third subject") should wrap rather than force the
+     whole table wider than it needs to be. */
+  text-wrap: balance;
+}
+/* Zebra striping: on a wide subject grid it is what keeps the eye on one row
+   while scrolling sideways. */
+.rich-text tbody tr:nth-child(even) {
+  background-color: color-mix(in oklab, var(--green-mist) 40%, transparent);
+}
+
+@theme inline {
+  /* The primitives inherit the site's own pairing (§2) rather than shipping
+     their own face: `font-sans` is Inter + Noto Sans Devanagari, `font-heading`
+     is Fraunces + Noto Serif Devanagari. `init` wired both to its bundled Geist;
+     these two lines are that override. */
+  --font-heading: var(--font-display);
+  --font-sans: var(--font-body);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}

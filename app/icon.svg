@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Relentless Lab School &amp; College">
+  <!--
+    Browser-tab icon. An RL monogram on the ink ground, with the signature
+    accent as a rule beneath it — the wordmark reduced to the one thing that
+    survives at 16px.
+
+    Colours are the palette's literal hex rather than var() references: this
+    file is served as a standalone document at /icon.svg, so it has no access
+    to the tokens declared on the site's :root.
+
+    The typeface is a generic serif stack, not Fraunces. A favicon cannot
+    reference a webfont without embedding it, and a 25KB base64 payload on the
+    tab icon is not worth the exact match — the serif character is what reads at
+    this size, not the specific face.
+  -->
+  <rect width="64" height="64" rx="12" fill="#0b0f1e"/>
+  <text
+    x="32"
+    y="38"
+    text-anchor="middle"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-size="30"
+    font-weight="600"
+    letter-spacing="0.5"
+    fill="#faf6ef"
+  >RL</text>
+  <rect x="22" y="46" width="20" height="3" rx="1.5" fill="#c77d3a"/>
+</svg>
